@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Log in</title>
+
+    <meta name="author" content="Berkant Gürcan">
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+</head>
+<body>
+    <section class="container">
+        <div class="login-container">
+            <div class="circle circle-one"></div>
+            <div class="form-container">
+                <h1 class="opacity">LOGIN</h1>
+                <form th:action="@{/register/save}" th:object="${user}" method="post">
+                    <label for="first_name">First Name</label>:
+                    <input type="text" id="first_name" name="first_name" autofocus="autofocus" th:field="${user.firstName}" /> <br />
+                    <label for="last_name">Last Name</label>:
+                    <input type="text" id="last_name" name="last_name" autofocus="autofocus" th:field="${user.lastName}" /> <br />
+                    <label for="username">Username</label>:
+                    <input type="text" id="username" name="username" autofocus="autofocus" th:field="${user.username}" /> <br />
+                    <label for="password">Password</label>:
+                    <input type="password" id="password" name="password" th:field="${user.username}"  /> <br />
+                    <input type="submit" value="Log in" />
+                </form>
+                <div class="register-forget opacity">
+                    <a href="">REGISTER</a>
+                    <a href="">FORGOT PASSWORD</a>
+                </div>
+            </div>
+            <div class="circle circle-two"></div>
+        </div>
+        <div class="theme-btn-container"></div>
+    </section>
+</body>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/scripts.js"></script>
+
+</html>
