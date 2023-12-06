@@ -11,7 +11,6 @@ User A will upload the file and use the options on the screen;
 - Either, only sign the file,
 - or, it will just encrypt the file (symmetrical encryption),
 - or, it will both sign and encrypt the file.
-- 
 
 User B will select the file from the screen menu that is transmitted to her / him from User A and using the instructions provided by the application on the screen;
 
