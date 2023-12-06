@@ -1,9 +1,12 @@
 package com.cybersecurity.assigment.service.keys;
 
+import com.cybersecurity.assigment.model.user.User;
+import com.cybersecurity.assigment.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.*;
-import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
@@ -12,52 +15,43 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.*;
 import java.security.spec.*;
-import java.util.Base64;
+import java.util.Optional;
 
 @Service
 public class KeyService {
-    private static final int IV_LENGTH = 12;
+    @Autowired
+    private UserRepository userRepository;
 
     public KeyPair saveRSAKey() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         SecureRandom secureRandom = new SecureRandom();
         keyPairGenerator.initialize(2048, secureRandom);
 
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        return keyPairGenerator.generateKeyPair();
 
-        PublicKey publicKey = keyPair.getPublic();
-        PrivateKey privateKey = keyPair.getPrivate();
-
-        try (FileOutputStream fos = new FileOutputStream("public.key")) {
-            fos.write(publicKey.getEncoded());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try (FileOutputStream fos = new FileOutputStream("private.key")) {
-            fos.write(privateKey.getEncoded());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return keyPair;
     }
-    public SecretKey saveAESKey() throws NoSuchAlgorithmException {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        keyGenerator.init(256);
-        SecretKey secretKey = keyGenerator.generateKey();
+    public SecretKey saveAESKey() throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+        File secretKeyFile = new File("secret.key");
 
-        try (FileOutputStream fos = new FileOutputStream("secret.key")) {
-            fos.write(secretKey.getEncoded());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if(!secretKeyFile.exists()){
+            KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+            keyGenerator.init(256);
+            SecretKey secretKey = keyGenerator.generateKey();
+
+            try (FileOutputStream fos = new FileOutputStream(secretKeyFile)) {
+                fos.write(secretKey.getEncoded());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return secretKey;
         }
 
-        return secretKey;
+        else return null;
     }
-    public PublicKey getPublicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        File publicKeyFile = new File("public.key");
-        byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile.toPath());
+    public PublicKey getPublicKey(String username) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+
+        Optional<User> user= userRepository.findByUsername(username);
+        byte[] publicKeyBytes = user.get().getPublicKey();
 
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
@@ -67,8 +61,9 @@ public class KeyService {
     }
 
     public PrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        File privateKeyFile = new File("private.key");
-        byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile.toPath());
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> user= userRepository.findByUsername(username);
+        byte[] privateKeyBytes = user.get().getPrivateKey();
 
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
@@ -96,8 +91,8 @@ public class KeyService {
         return cipherData;
     }
 
-    public byte[] asymmetricDecryption(byte[] data) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException, InvalidKeySpecException {
-        PublicKey publicKey = getPublicKey();
+    public byte[] asymmetricDecryption(byte[] data, String username) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException, InvalidKeySpecException {
+        PublicKey publicKey = getPublicKey(username);
         Cipher cipher = Cipher.getInstance("RSA");
 
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
@@ -108,6 +103,7 @@ public class KeyService {
     }
 
     public byte[] symmetricEncryption(byte[] data, IvParameterSpec ivParameterSpec) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchPaddingException, InvalidAlgorithmParameterException {
+        saveAESKey();
         SecretKey secretKey = getSecretKey();
 
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -116,9 +112,6 @@ public class KeyService {
 
 
         byte[] encryptedData = cipher.doFinal(data);
-
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
-        byte[] plainData = cipher.doFinal(encryptedData);
 
         return encryptedData;
     }

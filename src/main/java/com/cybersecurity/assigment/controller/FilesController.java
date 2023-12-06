@@ -1,21 +1,19 @@
 package com.cybersecurity.assigment.controller;
 
-import com.cybersecurity.assigment.model.FileInfo;
+import com.cybersecurity.assigment.model.file.FileInfo;
 import com.cybersecurity.assigment.model.file.FileModel;
 import com.cybersecurity.assigment.service.files.FilesStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
  @Controller
@@ -27,15 +25,19 @@ import java.util.stream.Collectors;
         @PostMapping("/upload")
         public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
             String message = "";
-            try {
-                storageService.save(file);
+            if(!file.isEmpty()) {
+                try {
+                    storageService.save(file);
 
-                message = "Uploaded the file successfully: " + file.getOriginalFilename();
-                return ResponseEntity.status(HttpStatus.OK).body(message);
-            } catch (Exception e) {
-                message = "Could not upload the file: " + file.getOriginalFilename() + ". Error: " + e.getMessage();
-                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
+                    message = "Uploaded the file successfully: " + file.getOriginalFilename();
+                    return ResponseEntity.status(HttpStatus.OK).body(message);
+                } catch (Exception e) {
+                    message = "Could not upload the file: " + file.getOriginalFilename() + ". Error: " + e.getMessage();
+                    return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
+                }
             }
+            message = "Such file does not exist: " + file.getContentType();
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
         }
 
         @GetMapping("/files")
@@ -55,9 +57,10 @@ import java.util.stream.Collectors;
         @GetMapping("/")
         public String getAllFileInfos(Model model)
         {
-            model.addAttribute("files", storageService.getAllFiles());
-            System.out.println(model.getAttribute("files"));
-            return "main";
+            model.addAttribute("senderFiles", storageService.getAllFilesByPublisher());
+            model.addAttribute("receiverFiles", storageService.getAllReceiverFiles());
+            model.addAttribute("username", SecurityContextHolder.getContext().getAuthentication().getName());
+            return "index";
         }
 
         @GetMapping("/file/{id}")

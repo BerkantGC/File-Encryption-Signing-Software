@@ -65,19 +65,19 @@ public class FunctionController {
 
         byte[] bytes = md.digest();
 
-        byte[] decryptedData = keyService.asymmetricDecryption(cipherData);
+        byte[] decryptedData = keyService.asymmetricDecryption(cipherData, file.getPublisher());
 
 
         if(Base64.getEncoder().encodeToString(decryptedData).equals(Base64.getEncoder().encodeToString(bytes)))
         {
-            model.addAttribute("value", "Verified");
+            model.addAttribute("value", file.getPublisher());
         }
 
-        return "signed";
+        return "verify";
     }
 
     @RequestMapping("/encrypt/{id}")
-    public String symmetricEncryption(@PathVariable Integer id) throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+    public String symmetricEncryption(@PathVariable Integer id, Model model) throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
         FileModel file = storageService.getFile(id);
         IvParameterSpec ivParameterSpec = keyService.generateIv();
 
@@ -85,6 +85,8 @@ public class FunctionController {
 
         file.setEncrypted(encryptedData);
         fileRepository.save(file);
+
+        model.addAttribute("value", encryptedData);
         return "encrypted";
     }
 

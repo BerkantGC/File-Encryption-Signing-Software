@@ -11,6 +11,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.NoSuchAlgorithmException;
+
 @Controller
 @RequiredArgsConstructor
 @CrossOrigin("http://localhost:8080")
@@ -26,9 +28,9 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/save")
-    public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
-        System.out.println("AAAAAAA");
-        return ResponseEntity.ok(service.register(request));
+    public String register(@ModelAttribute("user") RegisterRequest user) throws NoSuchAlgorithmException {
+        service.register(user);
+        return "redirect:register?success";
     }
     @RequestMapping("/login")
     public String login(Model model)

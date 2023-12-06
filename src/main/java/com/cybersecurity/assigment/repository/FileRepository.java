@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface FileRepository extends JpaRepository<FileModel, Long> {
     List<FileModel> findByPublisher(String username);
+
+    List<FileModel> findByPublisherIsNot(String username);
 }

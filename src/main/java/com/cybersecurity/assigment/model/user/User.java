@@ -38,6 +38,15 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @Lob
+    @Column(length = 5242880)
+    private byte[] privateKey;
+
+    @Lob
+    @Column(length = 5242880)
+    private byte[] publicKey;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));

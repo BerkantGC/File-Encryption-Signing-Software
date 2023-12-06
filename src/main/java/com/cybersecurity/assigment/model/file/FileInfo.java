@@ -1,4 +1,4 @@
-package com.cybersecurity.assigment.model;
+package com.cybersecurity.assigment.model.file;
 
 public class FileInfo {
     private String name;

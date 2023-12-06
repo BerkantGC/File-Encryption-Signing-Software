@@ -46,6 +46,15 @@ public class FilesStorageService{
         return fileRepository.findById(id.longValue()).get();
     }
 
+    public List<FileModel> getAllFilesByPublisher(){
+        String publisher = SecurityContextHolder.getContext().getAuthentication().getName();
+        return  fileRepository.findByPublisher(publisher);
+    }
+    public List<FileModel> getAllReceiverFiles(){
+        String publisher = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return  fileRepository.findByPublisherIsNot(publisher);
+    }
     public Stream<FileModel> getAllFiles() {
         return fileRepository.findAll().stream();
     }
