@@ -1,4 +1,4 @@
-package com.cybersecurity.assigment.config;
+package com.cybersecurity.assigment.auth.config;
 
 
 import lombok.RequiredArgsConstructor;
@@ -21,20 +21,18 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @RequiredArgsConstructor
 @EnableWebSecurity
 public class SecurityConfiguration {
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider;
 
+    //configuration for security
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests((authorize) ->
-                authorize.requestMatchers("/register/**").permitAll()
-                        .requestMatchers("/index").permitAll()
-                        .requestMatchers("/css/**").permitAll()
-                        .anyRequest().authenticated()
+                authorize.requestMatchers("/register/**").permitAll() //Every user can access
+                        .requestMatchers("/css/**").permitAll() //Eversy user can access
+                        .anyRequest().authenticated() //Every authenticated user can access
         ).formLogin(
                 form -> form
-                        .loginPage("/login")
+                        .loginPage("/login") //login page is determined
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/")
                         .permitAll()

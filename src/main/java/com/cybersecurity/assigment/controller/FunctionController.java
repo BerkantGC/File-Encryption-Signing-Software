@@ -29,60 +29,81 @@ public class FunctionController {
     @Autowired
     KeyService keyService;
 
+    //Page to sign file
     @RequestMapping("/sign/{id}")
     public String sign(@PathVariable Integer id, Model model) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, IOException, InvalidKeySpecException, InvalidKeyException {
+        //Getting file from its unique id;
         FileModel file = storageService.getFile(id);
 
+        //Hashing method is determined(SHA-512 is selected by me)
         MessageDigest md = MessageDigest.getInstance("SHA-512");
+
+        //File's data bytes is given as an input for hashing;
         md.update(file.getData());
 
-        byte[] bytes = md.digest();
+        //Getting hashed value of data
+        byte[] hashedData = md.digest();
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < bytes.length; i++) {
-            sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
-        }
-        String hashedValue = sb.toString();
+        //To sign, hashed data is given to asymmetricEncryption function which is I've created.
+        //RSA algorithm is used for asymmetric encryption
+        //Note: Details is given in KeyService class
+        byte[] signedData = keyService.asymmetricEncryption(hashedData);
 
-
-        byte[] cipherData = keyService.asymmetricEncryption(bytes);
-
-        file.setSigned(cipherData);
+        //Updating signed entity of file to new signed value in database
+        file.setSigned(signedData);
         fileRepository.save(file);
 
-        model.addAttribute("value", Base64.getEncoder().encodeToString(cipherData));
+        //Showing digital signature value
+        model.addAttribute("value", Base64.getEncoder().encodeToString(signedData));
        return "signed";
     }
 
+    //Page to verify file(confirmation of signature)
     @RequestMapping("/verify/{id}")
     public String verifyFile(@PathVariable Integer id, Model model) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, IOException, InvalidKeySpecException {
+        //Getting file from its unique id;
         FileModel file = storageService.getFile(id);
 
-        byte[] cipherData = file.getSigned();
+        //Getting signed data of file from database
+        byte[] signedData = file.getSigned();
 
+        //Hashing is used for checking validate signature
+        //Hashing method is determined(SHA-512 is selected by me)
         MessageDigest md = MessageDigest.getInstance("SHA-512");
-        md.update(file.getData());
 
+        //Getting hashed value of data
+        md.update(file.getData());
         byte[] bytes = md.digest();
 
-        byte[] decryptedData = keyService.asymmetricDecryption(cipherData, file.getPublisher());
+        //Signed data is given to asymmetricDecryption for getting decrypted data.
+        //Note: Details is given in KeyService class
+        byte[] decryptedData = keyService.asymmetricDecryption(signedData, file.getPublisher());
 
-
+        //Checking equality between decrypted data and hashed value of original data.
+        //If they are equal, user confirms the file is come from actual user.
         if(Base64.getEncoder().encodeToString(decryptedData).equals(Base64.getEncoder().encodeToString(bytes)))
         {
-            model.addAttribute("value", file.getPublisher());
-        }
+            model.addAttribute("value", "Verified by : " + file.getPublisher());
+        } else model.addAttribute("value", "Not verified.");
 
         return "verify";
     }
 
+    //Page to encrypt file symmetrically
     @RequestMapping("/encrypt/{id}")
     public String symmetricEncryption(@PathVariable Integer id, Model model) throws IllegalBlockSizeException, NoSuchPaddingException, NoSuchAlgorithmException, IOException, InvalidKeySpecException, BadPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+        //Getting file from its unique id;
         FileModel file = storageService.getFile(id);
+
+        //Ivparameter is used for padding in encryption
         IvParameterSpec ivParameterSpec = keyService.generateIv();
 
+        //To encrypt, data is given to symmetricEncryption function which is I've created.
+        //AES algorithm is used for symmetric encryption
+        //Note: Details is given in KeyService class
         byte[] encryptedData = keyService.symmetricEncryption(file.getData(), ivParameterSpec);
 
+        //Updating encrypted entity of file to new encrypted data in database
         file.setEncrypted(encryptedData);
         fileRepository.save(file);
 
@@ -92,12 +113,20 @@ public class FunctionController {
 
     @RequestMapping("/decrypt/{id}")
     public ResponseEntity<byte[]> symmetricDecryption(@PathVariable Integer id) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, IOException, InvalidKeySpecException, InvalidKeyException, InvalidAlgorithmParameterException {
+        //Getting file from its unique id;
         FileModel file = storageService.getFile(id);
 
+        //Getting encrypted data of file from database
         byte[] encryptedData = file.getEncrypted();
+
+        //Ivparameter is used for unpadding in decryption
         IvParameterSpec ivParameterSpec = keyService.generateIv();
 
+        //To decrypt, data is given to symmetricDecryption function which is I've created.
+        //Note: Details is given in KeyService class
         byte[] decryptedData = keyService.symmetricDecryption(encryptedData, ivParameterSpec);
+
+        //Returning file in response entity so we can read file
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
                 .body(decryptedData);

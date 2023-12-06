@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
  @Controller
     public class FilesController {
-
+        //"Autowired" that enables dependency injection for Java classes in Spring Framework .
         @Autowired
         FilesStorageService storageService;
 
@@ -27,49 +27,47 @@ import java.util.stream.Collectors;
             String message = "";
             if(!file.isEmpty()) {
                 try {
-                    storageService.save(file);
+                    storageService.save(file); //Saving file to database
 
-                    message = "Uploaded the file successfully: " + file.getOriginalFilename();
+                    message = "Uploaded the file successfully: " + file.getOriginalFilename(); //Message after a successful upload
                     return ResponseEntity.status(HttpStatus.OK).body(message);
                 } catch (Exception e) {
-                    message = "Could not upload the file: " + file.getOriginalFilename() + ". Error: " + e.getMessage();
+                    message = "Could not upload the file: " + file.getOriginalFilename() + ". Error: " + e.getMessage(); //Error while uploading the file
                     return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
                 }
             }
-            message = "Such file does not exist: " + file.getContentType();
+            message = "Such file does not exist: " + file.getContentType(); //File is not uploaded
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);
         }
 
         @GetMapping("/files")
         public ResponseEntity<List<FileInfo>> getListFiles() {
+            // Creating uri for all files
             List<FileInfo> fileInfos = storageService.getAllFiles().map(dbFile -> {
                 String fileUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                         .path("/files/")
                         .path(String.valueOf(dbFile.getId()))
                         .toUriString();
 
+            // Getting the information as response to show as API (This isn't included to project)
                 return new FileInfo(dbFile.getName(), dbFile.getType(), dbFile.getData(), fileUri);
             }).collect(Collectors.toList());
 
+            // Show all files in API
             return ResponseEntity.status(HttpStatus.OK).body(fileInfos);
         }
 
         @GetMapping("/")
         public String getAllFileInfos(Model model)
         {
+            //All files owned by the current user
             model.addAttribute("senderFiles", storageService.getAllFilesByPublisher());
+
+            //All files owned by other users except the current user
             model.addAttribute("receiverFiles", storageService.getAllReceiverFiles());
+
+            //The username of the current user will be displayed on main page
             model.addAttribute("username", SecurityContextHolder.getContext().getAuthentication().getName());
             return "index";
         }
-
-        @GetMapping("/file/{id}")
-        @ResponseBody
-        public ResponseEntity<byte[]> getFile(@PathVariable Integer id) {
-            FileModel file = storageService.getFile(id);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"")
-                    .body(file.getData());
-        }
-
 }

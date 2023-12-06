@@ -22,40 +22,49 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
+//Service is for file storage operations
 @Service
 public class FilesStorageService{
-    private final Path root = Paths.get("uploads");
-
     @Autowired
     private FileRepository fileRepository;
 
-    public FileModel save(MultipartFile file) throws IOException{
+    //Function for saving new file to database
+    public FileModel save(MultipartFile file /*Getting file as parameter*/) throws IOException{
+        //Getting original name from file
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+
+        //Creating file model to save
         FileModel fileModel = new FileModel(
-                fileName,
-                file.getContentType(),
-                file.getBytes(),
-                null, null,
+                fileName, //name
+                file.getContentType(), //type
+                file.getBytes(), //data
+                null, //signature
+                null, //encrypted data
+                //User who uploaded file is the publisher of file
                 SecurityContextHolder.getContext().getAuthentication().getName());
+
 
         return fileRepository.save(fileModel);
     }
 
     public FileModel getFile(Integer id)
     {
+        //Getting file with its unique id from database
         return fileRepository.findById(id.longValue()).get();
     }
 
     public List<FileModel> getAllFilesByPublisher(){
-        String publisher = SecurityContextHolder.getContext().getAuthentication().getName();
-        return  fileRepository.findByPublisher(publisher);
+        //Getting uploaded files by current user
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return  fileRepository.findByPublisher(username);
     }
     public List<FileModel> getAllReceiverFiles(){
+        //Getting all other uploaded files
         String publisher = SecurityContextHolder.getContext().getAuthentication().getName();
-
         return  fileRepository.findByPublisherIsNot(publisher);
     }
     public Stream<FileModel> getAllFiles() {
+        //Getting all files
         return fileRepository.findAll().stream();
     }
 }

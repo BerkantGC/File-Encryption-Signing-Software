@@ -1,4 +1,4 @@
-package com.cybersecurity.assigment.config;
+package com.cybersecurity.assigment.auth.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -15,6 +15,7 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
+    //Creating a token
 
     private static final String SECRET_KEY = "6e565f7040275143594e6d3875243f6a5438707b672c612f2151445f47706a21";
     public String extractUsername(String token) {

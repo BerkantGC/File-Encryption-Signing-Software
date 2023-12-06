@@ -1,14 +1,13 @@
 package com.cybersecurity.assigment.auth;
 
 
-import com.cybersecurity.assigment.config.JwtService;
+import com.cybersecurity.assigment.auth.config.JwtService;
 import com.cybersecurity.assigment.model.user.Role;
 import com.cybersecurity.assigment.model.user.User;
 import com.cybersecurity.assigment.repository.UserRepository;
 import com.cybersecurity.assigment.service.keys.KeyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,35 +25,24 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     private final KeyService keyService;
+
+    //Saving new user to database
     public AuthenticationResponse register(RegisterRequest request) throws NoSuchAlgorithmException {
-        KeyPair keyPair = keyService.saveRSAKey();
+        //Generating a new unique keypair for user
+        KeyPair keyPair = keyService.generateRSAKey();
 
         var user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .privateKey(keyPair.getPrivate().getEncoded())
-                .publicKey(keyPair.getPublic().getEncoded())
+                .privateKey(keyPair.getPrivate().getEncoded()) //giving users private key
+                .publicKey(keyPair.getPublic().getEncoded())//giving users public key
                 .role(Role.USER)
                 .build();
-        userRepository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder().token(jwtToken).build();
-    }
-
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-        var user = userRepository.findByUsername(request.getUsername()).orElseThrow();
-        var jwtToken = jwtService.generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .build();
+        userRepository.save(user); //saving user
+        var jwtToken = jwtService.generateToken(user); //generating users token key
+        return AuthenticationResponse.builder().token(jwtToken).build(); //response of created user
     }
 
 }

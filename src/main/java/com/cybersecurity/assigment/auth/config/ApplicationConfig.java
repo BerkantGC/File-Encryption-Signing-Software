@@ -1,7 +1,6 @@
-package com.cybersecurity.assigment.config;
+package com.cybersecurity.assigment.auth.config;
 
 
-import com.cybersecurity.assigment.config.ApplicationConfig;
 import com.cybersecurity.assigment.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
